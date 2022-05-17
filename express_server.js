@@ -4,7 +4,7 @@ const PORT = 8080; //default port 8080
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended:true}));
 
-app.set("view engine", "ejs"); // Express app use EJS as template 
+app.set("view engine", "ejs");// Express app use EJS as template
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -19,7 +19,7 @@ app.post("/urls", (req, res) => { // AFter input of new URL, server sends back o
   let address = generateRandomString();
   urlDatabase[address] = req.body["longURL"]; // recieves long URL and makes it a value matching the key made by the random string generator
   res.redirect(`/urls/${address}`); // redirects to the urls/shortURL page
-})
+});
 
 app.get("/urls", (req, res) => { // Able to see the list of URLs posted
   const templateVars = { urls: urlDatabase };
@@ -29,15 +29,15 @@ app.get("/urls", (req, res) => { // Able to see the list of URLs posted
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {shortURL : req.params.shortURL, longURL : req.params.longURL};
   res.render("urls_show", templateVars); // Able to see the shorten URLs
-})
+});
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
-})
+  const longURL = urlDatabase[req.params.shortURL];// get longURL from the short URL
+  res.redirect(longURL); // redirection to long URL
+});
 
-app.get("/", (req, res) => { 
-  res.send("Hello"); // Will show Hello for root path 
+app.get("/", (req, res) => {
+  res.send("Hello");// Will show Hello for root path
 });
 
 app.listen(PORT, () => {
@@ -52,11 +52,11 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n"); //Example of Express format
 });
 
-function generateRandomString() { // generate random 6 number character string
+let generateRandomString = () => { // generate random 6 number character string
   let string = '';
   let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   for (let i = 0; i < 6; i++) {
     string += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return string;
-}
+};
