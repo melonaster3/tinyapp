@@ -17,7 +17,7 @@ app.get("/urls/new", (req, res) => { // When the user inputs new url
 
 app.post("/urls", (req, res) => { // AFter input of new URL, server sends back okay
   let address = generateRandomString();
-  urlDatabase[address] = req.body["longURL"]; // recieves long URL and makes it a value matching the key made by the random string generator
+  urlDatabase[address] = "http://" + req.body["longURL"]; // recieves long URL and makes it a value matching the key made by the random string generator
   res.redirect(`/urls/${address}`); // redirects to the urls/shortURL page
 });
 
@@ -33,13 +33,25 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];// get longURL from the short URL
-  res.redirect(longURL); // redirection to long URL
+  res.redirect(longURL); // redirection to long URLs
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
+app.post("/urls/:shortURL/edit", (req, res) => {
+  const shortURL = req.params.shortURL;
+  res.redirect(`/urls/${shortURL}`); // When the button for edit is clicked, redirect to the url page to edit 
+});
+
+app.post("/u/:shortURL/editURL", (req, res) => {
+  const shortURL = req.params.shortURL; // get shortURL that corresponds
+  urlDatabase[shortURL] = "http://" + req.body.longURL; //change corresponding URL with the longURL we recieved
   res.redirect("/urls");
+});
+
+app.post("/urls/:shortURL/delete", (req, res) => { 
+  delete urlDatabase[req.params.shortURL];//deletes the url that is recieved
+  res.redirect("/urls");//redirected to the url page
 })
+
 
 app.get("/", (req, res) => {
   res.send("Hello");// Will show Hello for root path
