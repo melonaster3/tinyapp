@@ -16,8 +16,9 @@ app.get("/urls/new", (req, res) => { // When the user inputs new url
 });
 
 app.post("/urls", (req, res) => { // AFter input of new URL, server sends back okay
-  console.log(req.body);
-  res.send("Okay");
+  let address = generateRandomString();
+  urlDatabase[address] = req.body["longURL"]; // recieves long URL and makes it a value matching the key made by the random string generator
+  res.redirect(`/urls/${address}`); // redirects to the urls/shortURL page
 })
 
 app.get("/urls", (req, res) => { // Able to see the list of URLs posted
@@ -28,6 +29,11 @@ app.get("/urls", (req, res) => { // Able to see the list of URLs posted
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {shortURL : req.params.shortURL, longURL : req.params.longURL};
   res.render("urls_show", templateVars); // Able to see the shorten URLs
+})
+
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 })
 
 app.get("/", (req, res) => { 
@@ -49,7 +55,7 @@ app.get("/hello", (req, res) => {
 function generateRandomString() { // generate random 6 number character string
   let string = '';
   let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < characters.length; i++) {
+  for (let i = 0; i < 6; i++) {
     string += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return string;
