@@ -10,20 +10,24 @@
 </head>
 <body>
   <main style="margin: 1em;">
-    <h3>My URLs</h3>
-    <table class="table">
+    <h3>URLs</h3>
+    <%- include('partials/_header')%>
+    <% if (userId === undefined) {%>
+      <h2>Please Login to see the URLs</h2>
+      <% } else {%>  
+      
+       <table class="table">
       <thead>
         <tr>
           <th scope="col">Short URL</th>
           <th scope="col">Long URL</th>
         </tr>
       </thead>
-      <%- include('partials/_header')%>
       <tbody>
         <% for (let url in urls) {%>
         <tr>
           <td><%= url %></td>
-          <td><%= urls[url] %></td>
+          <td><%= urls[url]%></td>
           <td>
             <form method="POST" action="/urls/<%= url %>/edit">
               <button type="submit" class="btn btn-outline-primary">EDIT</button>
@@ -33,7 +37,7 @@
             <form method="POST" action="/urls/<%= url %>/delete">
               <button type="submit" class="btn btn-outline-danger">DELETE</button>
             </form>
-          </td></tr> <%} %>
+          </td></tr> <%} }%> 
       </tbody>
     </table>
   </main>

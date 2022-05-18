@@ -6,7 +6,9 @@
   <title>URL - TinyApp Example</title>
 </head>
 <%- include('partials/_header')%>
+
 <body>
+  <% if (userId == ownerId) {%>
   <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
@@ -15,11 +17,14 @@
         <td>
           <label for="longURL">Enter a URL:</label>
           <form method="POST" name = "longURL" action="/u/<%= shortURL %>/editURL">
-           <input type="text" name="longURL" placeholder="http://" >
+           <input type="text" name = "longURL" placeholder="http://" >
             <button type="submit" class="btn btn-primary">Submit</button>
           </form>
         </td>
       </div>
+      <% } else {%>
+        <h1>This isnt your URL. :)</h1>
+        <% } %>
     <div class="card-footer text-muted"></div>
   </div>
   <!-- Bootstrap JS -->

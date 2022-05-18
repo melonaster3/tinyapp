@@ -10,8 +10,14 @@ app.set("view engine", "ejs");// Express app use EJS as template
 app.use(cookieParser());
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "aJ481W"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "aJ481W"
+  } 
 };
 
 const users = { 
@@ -30,11 +36,11 @@ const users = {
 app.post("/register", (req, res) => {
 
   if (req.body.email === '' || req.body.password === '') {
-    res.status(400).end(); // error 400 if empty password or email
+    res.status(400).send("Invalid Email or Password."); // error 400 if empty password or email
   };
 
   if (emailChecker(users, req.body.email) === true) {
-    res.status(400).end(); //error 400 if email already exists
+    res.status(400).send("Email address is already in use."); //error 400 if email already exists
   }
 
   const id = generateRandomString (); // random Id for registeration
@@ -47,7 +53,13 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 })
 
+
 app.get("/urls/new", (req, res) => { // When the user inputs new url
+
+  if(req.cookies["user_id"] === undefined) {
+    res.redirect("/urls"); //only logged in users can go make new
+  }
+
   const userId = req.cookies["user_id"];
   const templateVars = {
     userId : users[userId]
@@ -56,6 +68,7 @@ app.get("/urls/new", (req, res) => { // When the user inputs new url
 });
 
 app.get("/register", (req, res) => { // When the user wants to register
+
   const userId = req.cookies["user_id"];
   const templateVars = {
     userId : users[userId]
@@ -63,16 +76,25 @@ app.get("/register", (req, res) => { // When the user wants to register
   res.render("urls_register", templateVars);
 });
 
+
 app.post("/urls", (req, res) => { // AFter input of new URL, server sends back okay
-  let address = generateRandomString();
-  urlDatabase[address] = "http://" + req.body["longURL"]; // recieves long URL and makes it a value matching the key made by the random string generator
+
+  if(req.cookies["user_id"] === undefined) {
+    res.status(400).send("Log in to post new URL.");   // cant post on url if not logged in
+  }
+  const address = generateRandomString();
+  urlDatabase[address] = {};
+  urlDatabase[address]["longURL"] = "http://" + req.body.longURL; 
+  urlDatabase[address]["userID"] = req.cookies["user_id"];
+  // recieves long URL and makes it a value matching the key made by the random string generator
   res.redirect(`/urls/${address}`); // redirects to the urls/shortURL page
 });
 
 app.get("/urls", (req, res) => { // Able to see the list of URLs posted
   const userId = req.cookies["user_id"];
+  const corrUrls = urlsForUser(userId);
   const templateVars = {
-    urls: urlDatabase,
+    urls: corrUrls,
     userId : users[userId]
   };
   res.render("urls_index", templateVars);
@@ -82,14 +104,15 @@ app.get("/urls/:shortURL", (req, res) => {
   const userId = req.cookies["user_id"];
   const templateVars = {
     shortURL : req.params.shortURL,
-    longURL : req.params.longURL,
-    userId : users[userId]
+    longURL : urlDatabase[req.params.shortURL]["longURL"],
+    userId : users[userId]["id"],
+    ownerId : urlDatabase[req.params.shortURL]["userID"] // send both Id to see if they match
   };
   res.render("urls_show", templateVars); // Able to see the shorten URLs
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];// get longURL from the short URL
+  const longURL = urlDatabase[req.params.shortURL]["longURL"];// get longURL from the short URL
   res.redirect(longURL); // redirection to long URLs
 });
 
@@ -99,26 +122,38 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 });
 
 app.post("/u/:shortURL/editURL", (req, res) => {
-  const shortURL = req.params.shortURL; // get shortURL that corresponds
-  urlDatabase[shortURL] = "http://" + req.body.longURL; //change corresponding URL with the longURL we recieved
-  res.redirect("/urls");
+  const shortURL = req.params.shortURL;
+  if (urlDatabase[shortURL] === undefined ||req.body.userId !== urlDatabase[shortURL]["userID"]) {
+    res.status(400).send("You are not the owner."); // cannot delete when logged in user isnt owner
+  } else {
+    const shortURL = req.params.shortURL; // get shortURL that corresponds
+    urlDatabase[shortURL]["longURL"] = "http://" + req.body.longURL; //change corresponding URL with the longURL we recieved
+    res.redirect("/urls");
+  }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];//deletes the url that is recieved
-  res.redirect("/urls");//redirected to the url page
+  const shortURL = req.params.shortURL;
+
+  if (urlDatabase[shortURL] === undefined ||req.body.userId !== urlDatabase[shortURL]["userID"]) {
+    res.status(400).send("You are not the owner."); // cannot delete when logged in user isnt owner
+  } else {
+    delete urlDatabase[req.params.shortURL];//deletes the url that is recieved
+    res.redirect("/urls");//redirected to the url page
+  }
+ 
 });
 
 app.post("/login", (req, res) => {
 
   if (emailChecker(users, req.body.email) === false) {
-    res.status(403).end(); // error if email dosent exist
+    res.status(400).send("Email address does not exist.");; // error if email dosent exist
   } else if(emailChecker(users, req.body.email) === true) {
       if (req.body.password === paramTo(req.body.email, "password")) {
         res.cookie("user_id", paramTo(req.body.email, "id"));  //Sets cookie id to inputted email if it all passess
         res.redirect("/urls");//redirected to the url page
       } else {
-        res.status(403).end(); // error if password dosent match
+        res.status(400).send("Password does not match."); // error if password dosent match
       }
     }
 });
@@ -137,7 +172,7 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello");// Will show Hello for root path
+  res.redirect("/urls");//redirected to the url page
 });
 
 app.listen(PORT, () => {
@@ -148,9 +183,6 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase); // Convert the URL data base into JSON
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n"); //Example of Express format
-});
 
 const generateRandomString = () => { // generate random 6 number character string
   let string = '';
@@ -181,3 +213,14 @@ const paramTo = (emailInput, string) => { // takes in the email and finds the pa
   }
   return undefined;
 };
+
+const urlsForUser = (id) => { // will return an object, key being the short ID and the value being the corresponding longURL
+  let urls = {};
+  let keys = Object.keys(urlDatabase);
+  for (let key of keys) {
+    if (urlDatabase[key]["userID"] === id) {
+      urls[key] = urlDatabase[key]["longURL"];
+    }
+  }
+  return urls;
+}
