@@ -14,9 +14,53 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "whateveryouwant"
+  },
+  "userRandomID2": {
+    id: "userRandomID2",
+    email: "user2@example.com",
+    password: "whateveryouwant2"
+  },
+}
+
+app.post("/register", (req, res) => {
+
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).end(); // error 400 if empty password or email
+  };
+
+  if (emailChecker(users, req.body.email) === true) {
+    res.status(400).end(); //error 400 if email already exists
+  }
+
+  const id = generateRandomString (); // random Id for registeration
+  users[id] = {
+    "id": id, 
+    "email": req.body.email,
+    "password": req.body.password // add the new id to the database
+  };
+  res.cookie("user_id", id); //Sets cookie user to inputted value
+  res.redirect("/urls");
+})
+
 app.get("/urls/new", (req, res) => { // When the user inputs new url
-  
-  res.render("urls_new");
+  const userId = req.cookies["user_id"];
+  const templateVars = {
+    userId : users[userId]
+  };
+  res.render("urls_new", templateVars);
+});
+
+app.get("/register", (req, res) => { // When the user wants to register
+  const userId = req.cookies["user_id"];
+  const templateVars = {
+    userId : users[userId]
+  };
+  res.render("urls_register", templateVars);
 });
 
 app.post("/urls", (req, res) => { // AFter input of new URL, server sends back okay
@@ -26,18 +70,20 @@ app.post("/urls", (req, res) => { // AFter input of new URL, server sends back o
 });
 
 app.get("/urls", (req, res) => { // Able to see the list of URLs posted
+  const userId = req.cookies["user_id"];
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"]
+    userId : users[userId]
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  const userId = req.cookies["user_id"];
   const templateVars = {
     shortURL : req.params.shortURL,
     longURL : req.params.longURL,
-    username: req.cookies["username"],
+    userId : users[userId]
   };
   res.render("urls_show", templateVars); // Able to see the shorten URLs
 });
@@ -64,12 +110,29 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username); //Sets cookie username to inputted value
-  res.redirect("/urls");//redirected to the url page
+
+  if (emailChecker(users, req.body.email) === false) {
+    res.status(403).end(); // error if email dosent exist
+  } else if(emailChecker(users, req.body.email) === true) {
+      if (req.body.password === paramTo(req.body.email, "password")) {
+        res.cookie("user_id", paramTo(req.body.email, "id"));  //Sets cookie id to inputted email if it all passess
+        res.redirect("/urls");//redirected to the url page
+      } else {
+        res.status(403).end(); // error if password dosent match
+      }
+    }
 });
 
+app.get("/login", (req, res) => { // show login page format at urls_login.ejs
+  const userId = req.cookies["user_id"];
+  const templateVars = {
+    userId : users[userId]
+  };
+  res.render("urls_login", templateVars);
+})
+
 app.post("/logout", (req, res) => {
-  res.clearCookie("username"); //Clears user cookie to be logged out
+  res.clearCookie("user_id"); //Clears user cookie to be logged out
   res.redirect("/urls");//redirected to the url page
 });
 
@@ -89,11 +152,32 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n"); //Example of Express format
 });
 
-let generateRandomString = () => { // generate random 6 number character string
+const generateRandomString = () => { // generate random 6 number character string
   let string = '';
   let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   for (let i = 0; i < 6; i++) {
     string += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return string;
+};
+
+const emailChecker = (obj, email) => { //function to check if email and any id are same
+  let keys = Object.keys(obj);
+  for (let key of keys) {
+    if (obj[key].email === email) {
+      return true; 
+    }
+  }
+  return false;
+};
+
+const paramTo = (emailInput, string) => { // takes in the email and finds the parameter corresponding to the string input. If the string was a password or id, it would check the users object, find the same email and return the password or id
+  let keys = Object.keys(users);
+  for (let key of keys) {
+    if (users[key]["email"] === emailInput) {
+      const variable = users[key][string]; 
+      return variable;
+    }
+  }
+  return undefined;
 };
