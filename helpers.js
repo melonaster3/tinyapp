@@ -1,6 +1,3 @@
-const urlDatabase = require("./express_server").urlDatabase;
-const users = require("./express_server").users;
-
 const generateRandomString = () => { // generate random 6 number character string
   let string = '';
   let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -20,21 +17,10 @@ const checkUserByEmail = (obj, email) => { //function to check if email and any 
   return false;
 };
 
-const paramTo = (emailInput, string) => { // takes in the email and finds the parameter corresponding to the string input. If the string was a password or id, it would check the users object, find the same email and return the password or id
-  let keys = Object.keys(users);
-  for (let key of keys) {
-    if (users[key]["email"] === emailInput) {
-      const variable = users[key][string]; 
-      return variable;
-    }
-  }
-  return undefined;
-};
 
 const functions = {
   generateRandomString,
   checkUserByEmail,
-  paramTo,
 }
 
 module.exports = functions;
