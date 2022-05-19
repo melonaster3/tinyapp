@@ -6,9 +6,8 @@
   <title>URL - TinyApp Example</title>
 </head>
 <%- include('partials/_header')%>
-
 <body>
-  <% if (userId == ownerId) {%>
+  <% if ( userId !== undefined && userId["id"] === ownerId)  {%>
   <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
